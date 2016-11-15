@@ -2,6 +2,7 @@ package server
 
 import (
 	"crypto/tls"
+	"fmt"
 	"math/rand"
 	"ngrok/conn"
 	log "ngrok/log"
@@ -10,6 +11,8 @@ import (
 	"os"
 	"runtime/debug"
 	"time"
+
+	MQTT "github.com/eclipse/paho.mqtt.golang"
 )
 
 const (
@@ -25,7 +28,34 @@ var (
 	// XXX: kill these global variables - they're only used in tunnel.go for constructing forwarding URLs
 	opts      *Options
 	listeners map[string]*conn.Listener
+	mqttc     *MQTT.Client
 )
+
+var f MQTT.MessageHandler = func(client MQTT.Client, msg MQTT.Message) {
+	fmt.Printf("Topic: %s\n", msg.Topic())
+	fmt.Printf("%s\n", msg.Payload())
+}
+
+func NewMQTTClient(srv string) *MQTT.Client {
+	opts := MQTT.NewClientOptions().AddBroker(srv)
+	opts.SetClientID("magicwifi-176")
+	opts.SetDefaultPublishHandler(f)
+	opts.SetUsername("admin")
+	opts.SetPassword("password")
+
+	c := MQTT.NewClient(opts)
+
+	if token := c.Connect(); token.Wait() && token.Error() != nil {
+		panic(token.Error())
+	}
+
+	if token := c.Subscribe("ngrok-server/info", 0, nil); token.Wait() && token.Error() != nil {
+		fmt.Println(token.Error())
+		os.Exit(1)
+	}
+
+	return &c
+}
 
 func NewProxy(pxyConn conn.Conn, regPxy *msg.RegProxy) {
 	// fail gracefully if the proxy connection fails to register
@@ -98,6 +128,33 @@ func tunnelListener(addr string, tlsConfig *tls.Config) {
 	}
 }
 
+func MQTTtunnel() {
+	for {
+		defer (*mqttc).Disconnect(250)
+
+		var s string
+		for k := range controlRegistry.controls {
+			control := controlRegistry.Get(k)
+			if control.tunnels != nil {
+				s += fmt.Sprintf("mac:%s rport：%d, lport:%d\n", control.auth.Mac, control.tunnels[0].req.RemotePort, control.tunnels[0].req.LocalPort)
+			}
+		}
+		//fmt.Println(s)
+		token := (*mqttc).Publish("ngrok-server/info", 0, false, s)
+		token.Wait()
+
+		time.Sleep(time.Second * 5)
+
+		// t := controlRegistry.Get("11:22:33:44:55:66")
+		// if t != nil {
+		// 	fmt.Println("clientId=", t.id)
+		// 	fmt.Println("port:", t.tunnels[0].req.RemotePort)
+
+		// 	time.Sleep(time.Second * 5)
+		// }
+	}
+}
+
 func Main() {
 	// parse options
 	opts = parseArgs()
@@ -116,7 +173,8 @@ func Main() {
 	registryCacheFile := os.Getenv("REGISTRY_CACHE_FILE")
 	tunnelRegistry = NewTunnelRegistry(registryCacheSize, registryCacheFile)
 	controlRegistry = NewControlRegistry()
-
+	mqttc = NewMQTTClient("tcp://hiweeds.net:1883")
+	go MQTTtunnel()
 	// start listeners
 	listeners = make(map[string]*conn.Listener)
 

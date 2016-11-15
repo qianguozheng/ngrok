@@ -39,6 +39,7 @@ type Auth struct {
 	OS        string
 	Arch      string
 	ClientId  string // empty for new sessions
+	Mac       string
 }
 
 // A server responds to an Auth message with an
@@ -73,6 +74,7 @@ type ReqTunnel struct {
 
 	// tcp only
 	RemotePort uint16
+	LocalPort  uint16
 }
 
 // When the server opens a new tunnel on behalf of

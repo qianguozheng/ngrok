@@ -132,6 +132,22 @@ func (c *Control) registerTunnel(rawTunnelReq *msg.ReqTunnel) {
 		tunnelReq.Protocol = proto
 
 		c.conn.Debug("Registering new tunnel")
+
+	ADJUST: //once found same remoteport, find other free port
+		port := &tunnelReq.RemotePort
+		for k := range controlRegistry.controls {
+			control := controlRegistry.Get(k)
+			if control != nil {
+				if control.tunnels != nil {
+					if *port == control.tunnels[0].req.RemotePort {
+						(*port)++
+						c.conn.Debug("The remote port is equal, need change it")
+						goto ADJUST
+					}
+				}
+			}
+		}
+
 		t, err := NewTunnel(&tunnelReq, c)
 		if err != nil {
 			c.out <- &msg.NewTunnel{Error: err.Error()}

@@ -4,12 +4,14 @@ import (
 	"crypto/tls"
 	"fmt"
 	"math/rand"
+	"net/http"
 	"ngrok/conn"
 	log "ngrok/log"
 	"ngrok/msg"
 	"ngrok/util"
 	"os"
 	"runtime/debug"
+	"strings"
 	"time"
 
 	MQTT "github.com/eclipse/paho.mqtt.golang"
@@ -136,7 +138,7 @@ func MQTTtunnel() {
 		for k := range controlRegistry.controls {
 			control := controlRegistry.Get(k)
 			if control.tunnels != nil {
-				s += fmt.Sprintf("mac:%s rport：%d, lport:%d\n", control.auth.Mac, control.tunnels[0].req.RemotePort, control.tunnels[0].req.LocalPort)
+				s += fmt.Sprintf("mac:%s rport:%d,lport:%d\n", control.auth.Mac, control.tunnels[0].req.RemotePort, control.tunnels[0].req.LocalPort)
 			}
 		}
 		//fmt.Println(s)
@@ -152,6 +154,31 @@ func MQTTtunnel() {
 
 		// 	time.Sleep(time.Second * 5)
 		// }
+	}
+}
+
+func HTTPPost(url string) {
+	for {
+		var s string
+		for k := range controlRegistry.controls {
+			control := controlRegistry.Get(k)
+			if control.tunnels != nil {
+				s += fmt.Sprintf("mac|%s,rport|%d,lport|%d\n", control.auth.Mac, control.tunnels[0].req.RemotePort, control.tunnels[0].req.LocalPort)
+			}
+		}
+
+		//Http post string to server
+		resp, err := http.Post(url,
+			"application/x-www-form-urlencoded",
+			strings.NewReader(s))
+
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		resp.Body.Close()
+
+		time.Sleep(time.Second * 5)
 	}
 }
 
@@ -173,8 +200,12 @@ func Main() {
 	registryCacheFile := os.Getenv("REGISTRY_CACHE_FILE")
 	tunnelRegistry = NewTunnelRegistry(registryCacheSize, registryCacheFile)
 	controlRegistry = NewControlRegistry()
-	mqttc = NewMQTTClient("tcp://hiweeds.net:1883")
+	mqttc = NewMQTTClient(opts.mqtt)
+	log.Info("MQTT Server %s", opts.mqtt)
 	go MQTTtunnel()
+
+	log.Info("HTTP Post url: %s", opts.posturl)
+	go HTTPPost(opts.posturl)
 	// start listeners
 	listeners = make(map[string]*conn.Listener)
 

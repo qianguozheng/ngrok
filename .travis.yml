@@ -1,11 +1,12 @@
 sudo: false
 language: go
-script: make release-all
+script: make release-server
 install: true
 go: 
     - 1.4
     - 1.5
     - 1.6
+    - 1.7
     - tip
 
 matrix:

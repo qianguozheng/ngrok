@@ -2,6 +2,7 @@ package server
 
 import (
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"math/rand"
 	"net/http"
@@ -159,6 +160,28 @@ func MQTTtunnel() {
 
 func HTTPPost(url string) {
 	for {
+		var err error
+		defer func(url string) {
+
+			if r := recover(); r != nil {
+
+				fmt.Println("Recovered in testPanic2Error", r)
+
+				//check exactly what the panic was and create error.
+				switch x := r.(type) {
+				case string:
+					err = errors.New(x)
+				case error:
+					err = x
+				default:
+					err = errors.New("Unknow panic")
+				}
+			}
+			fmt.Println(err)
+			HTTPPost(url)
+
+		}(url)
+
 		var s string
 		for k := range controlRegistry.controls {
 			control := controlRegistry.Get(k)

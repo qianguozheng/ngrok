@@ -10,6 +10,7 @@ import (
 	"runtime/debug"
 	"strings"
 	"time"
+	"net"
 )
 
 const (
@@ -58,6 +59,22 @@ type Control struct {
 
 	// synchronizer for controller shutdown of entire Control
 	shutdown *util.Shutdown
+}
+
+//Add by weeds at 2017/1/19
+func GetPort() uint16 {
+	addr, err := net.ResolveTCPAddr("tcp","localhost:0")
+	if err != nil{
+		panic(err)
+	}
+
+	l, err := net.ListenTCP("tcp", addr)
+	if err != nil{
+		panic(err)
+	}
+	defer l.Close()
+
+	return uint16(l.Addr().(*net.TCPAddr).Port)
 }
 
 func NewControl(ctlConn conn.Conn, authMsg *msg.Auth) {
@@ -140,7 +157,8 @@ func (c *Control) registerTunnel(rawTunnelReq *msg.ReqTunnel) {
 			if control != nil {
 				if control.tunnels != nil {
 					if *port == control.tunnels[0].req.RemotePort {
-						(*port)++
+						//(*port)++
+						(*port) = GetPort() //Using API to get local free port
 						c.conn.Debug("The remote port is equal, need change it")
 						goto ADJUST
 					}

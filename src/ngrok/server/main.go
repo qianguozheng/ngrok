@@ -228,7 +228,9 @@ func Main() {
 	go MQTTtunnel()
 
 	log.Info("HTTP Post url: %s", opts.posturl)
-	go HTTPPost(opts.posturl)
+	if opts.posturl != "" {
+		go HTTPPost(opts.posturl)
+	}
 	// start listeners
 	listeners = make(map[string]*conn.Listener)
 

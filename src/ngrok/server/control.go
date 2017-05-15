@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 	"io"
+	"net"
 	"ngrok/conn"
 	"ngrok/msg"
 	"ngrok/util"
@@ -10,7 +11,6 @@ import (
 	"runtime/debug"
 	"strings"
 	"time"
-	"net"
 )
 
 const (
@@ -63,13 +63,13 @@ type Control struct {
 
 //Add by weeds at 2017/1/19
 func GetPort() uint16 {
-	addr, err := net.ResolveTCPAddr("tcp","localhost:0")
-	if err != nil{
+	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
+	if err != nil {
 		panic(err)
 	}
 
 	l, err := net.ListenTCP("tcp", addr)
-	if err != nil{
+	if err != nil {
 		panic(err)
 	}
 	defer l.Close()

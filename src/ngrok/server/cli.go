@@ -13,7 +13,9 @@ type Options struct {
 	tlsKey     string
 	logto      string
 	loglevel   string
+	posturl_en int
 	posturl    string
+	mqtt_en    int
 	mqtt       string
 }
 
@@ -28,6 +30,8 @@ func parseArgs() *Options {
 	loglevel := flag.String("log-level", "DEBUG", "The level of messages to log. One of: DEBUG, INFO, WARNING, ERROR")
 	posturl := flag.String("posturl", "http://magicwifi.com.cn/v3/api/device/vpn", "The http post url used to send current existence mac-rport-lport pair")
 	mqtt := flag.String("mqtt", "tcp://hiweeds.net:1883", "MQTT server/broker this client connect to and publish message")
+	posturl_en := flag.Int("posturl-enable", 0, "Enable post to url assigned by posturl, Default: disable")
+	mqtt_en := flag.Int("mqtt-enable", 0, "Enable send mqtt message to mqtt server, Default: disable")
 	flag.Parse()
 
 	return &Options{
@@ -41,5 +45,7 @@ func parseArgs() *Options {
 		loglevel:   *loglevel,
 		posturl:    *posturl,
 		mqtt:       *mqtt,
+		mqtt_en:    *mqtt_en,
+		posturl_en: *posturl_en,
 	}
 }

@@ -157,8 +157,8 @@ func (c *Control) registerTunnel(rawTunnelReq *msg.ReqTunnel) {
 			if control != nil {
 				if control.tunnels != nil {
 					if *port == control.tunnels[0].req.RemotePort {
-						//(*port)++
-						(*port) = GetPort() //Using API to get local free port
+						(*port)++ //It is easy to find the port
+						//(*port) = GetPort() //Using API to get local free port
 						c.conn.Debug("The remote port is equal, need change it")
 						goto ADJUST
 					}

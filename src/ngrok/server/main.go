@@ -223,14 +223,24 @@ func Main() {
 	registryCacheFile := os.Getenv("REGISTRY_CACHE_FILE")
 	tunnelRegistry = NewTunnelRegistry(registryCacheSize, registryCacheFile)
 	controlRegistry = NewControlRegistry()
-	mqttc = NewMQTTClient(opts.mqtt)
-	log.Info("MQTT Server %s", opts.mqtt)
-	go MQTTtunnel()
 
-	log.Info("HTTP Post url: %s", opts.posturl)
-	if opts.posturl != "" {
-		go HTTPPost(opts.posturl)
+	if opts.mqtt_en == 1 {
+		mqttc = NewMQTTClient(opts.mqtt)
+		log.Info("MQTT Server %s", opts.mqtt)
+		go MQTTtunnel()
+	} else {
+		log.Info("Default MQTT client disabled.")
 	}
+
+	if opts.posturl_en == 1 {
+		log.Info("HTTP Post url: %s", opts.posturl)
+		if opts.posturl != "" {
+			go HTTPPost(opts.posturl)
+		}
+	} else {
+		log.Info("Default HTTP Post disabled.")
+	}
+
 	// start listeners
 	listeners = make(map[string]*conn.Listener)
 

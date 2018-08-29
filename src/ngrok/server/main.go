@@ -132,9 +132,9 @@ func tunnelListener(addr string, tlsConfig *tls.Config) {
 }
 
 func MQTTtunnel() {
-	for {
-		defer (*mqttc).Disconnect(250)
+	defer (*mqttc).Disconnect(250)
 
+	for {
 		var s string
 		for k := range controlRegistry.controls {
 			control := controlRegistry.Get(k)
@@ -189,7 +189,7 @@ func HTTPPost(url string) {
 				s += fmt.Sprintf("mac|%s,rport|%d,lport|%d\n", control.auth.Mac, control.tunnels[0].req.RemotePort, control.tunnels[0].req.LocalPort)
 			}
 		}
-
+		log.Debug("HTTP Post: %s", s)
 		//Http post string to server
 		resp, err := http.Post(url,
 			"application/x-www-form-urlencoded",
